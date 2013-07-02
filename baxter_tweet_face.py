@@ -4,6 +4,8 @@ from __future__ import print_function
 import os
 import urllib
 
+import Image
+
 import cv2
 from cv2 import imread
 
@@ -65,6 +67,32 @@ for tweet in it:
         with open(image_file_name, 'wb') as f:
             i += 1
             f.write(image_data)
+        # Frame the image (http://stackoverflow.com/questions/4744372/reducing-the-width-height-of-an-image-to-fit-a-given-aspect-ratio-how-python)
+        image = Image.open(image_file_name)
+        width = image.size[0]
+        height = image.size[1]
+
+        aspect = width / float(height)
+
+        ideal_width = 1024
+        ideal_height = 600
+
+        ideal_aspect = ideal_width / float(ideal_height)
+
+        if aspect > ideal_aspect:
+            # Then crop the left and right edges:
+            new_width = int(ideal_aspect * height)
+            offset = (width - new_width) / 2
+            resize = (offset, 0, width - offset, height)
+        else:
+            # ... crop the top and bottom:
+            new_height = int(width / ideal_aspect)
+            offset = (height - new_height) / 2
+            resize = (0, offset, width, height - offset)
+        cropped = image.crop(resize).resize((ideal_width, ideal_height), Image.ANTIALIAS)
+        os.remove(image_file_name)
+        cropped.save(image_file_name)
+        # Convert to cv_image
         cv_image = imread(image_file_name)
         cv_image = cv2.cv.fromarray(cv_image)
         img_msg = cv_bridge.cv_to_imgmsg(cv_image)
